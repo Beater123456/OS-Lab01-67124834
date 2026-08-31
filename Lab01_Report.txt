@@ -1,16 +1,18 @@
 ======================================================
 COE67-XXX Operating Systems - Lab 01 Report
-Name: 
-Student ID: 
+Name: Attaporn Haijaroensuk
+Student ID: 67124834
 ======================================================
 
 1. Hardware Baseline:
-- OS Version:
-- Number of CPU Cores:
-- Total RAM:
+- OS Version: Darwin 24.5.0
+- Number of CPU Cores: 8
+- Total RAM: 8.0 GB
 
 2. Observation (from htop during stress test):
-[Write your answer here]
+During the CPU stress test, the Python script utilized only one CPU core at nearly 100% capacity, 
+leaving the other cores largely idle. This observation demonstrates the limitation of Python's single-thread execution.
 
 3. Analysis:
-[Write your answer here]
+Knowing the memory (RAM) limit is crucial because loading massive datasets like 500,000 images all at once can exceed system capacity and cause Out of Memory crashes. 
+Additionally, knowing the CPU core count allows developers to write optimized training code that utilizes multiple cores to process data faster, overcoming the single-thread bottleneck. 
