@@ -1,7 +1,7 @@
 ======================================================
 COE67-222 Operating Systems - Lab 02 Report
 Name: Attaporn Haijaroensuk
-Student ID: [ใส่รหัสนักศึกษาของคุณ]
+Student ID: 67124834
 ======================================================
 1. Execution Time Comparison:
 - Sequential Time: [ใส่เวลา Sequential ที่จดไว้] seconds
