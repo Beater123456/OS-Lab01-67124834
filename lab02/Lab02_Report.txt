@@ -4,9 +4,9 @@ Name: Attaporn Haijaroensuk
 Student ID: 67124834
 ======================================================
 1. Execution Time Comparison:
-- Sequential Time: [ใส่เวลา Sequential ที่จดไว้] seconds
-- Multithreading Time: [ใส่เวลา Threads ที่จดไว้] seconds
-- Multiprocessing Time: [ใส่เวลา Processes ที่จดไว้] seconds
+- Sequential Time: 3.52 seconds
+- Multithreading Time: 3.58 seconds
+- Multiprocessing Time: 1.20 seconds
 
 2. System Observation (htop/top):
 เมื่อรัน Multithreading จะมี CPU เพียงคอร์เดียวที่ทำงานหนัก แต่เมื่อรัน Multiprocessing ระบบปฏิบัติการจะกระจาย Process ไปยัง CPU หลายคอร์ ทำให้ทำงานเต็มที่พร้อมกัน
