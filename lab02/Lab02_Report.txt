@@ -1,0 +1,15 @@
+======================================================
+COE67-222 Operating Systems - Lab 02 Report
+Name: Attaporn Haijaroensuk
+Student ID: [ใส่รหัสนักศึกษาของคุณ]
+======================================================
+1. Execution Time Comparison:
+- Sequential Time: [ใส่เวลา Sequential ที่จดไว้] seconds
+- Multithreading Time: [ใส่เวลา Threads ที่จดไว้] seconds
+- Multiprocessing Time: [ใส่เวลา Processes ที่จดไว้] seconds
+
+2. System Observation (htop/top):
+เมื่อรัน Multithreading จะมี CPU เพียงคอร์เดียวที่ทำงานหนัก แต่เมื่อรัน Multiprocessing ระบบปฏิบัติการจะกระจาย Process ไปยัง CPU หลายคอร์ ทำให้ทำงานเต็มที่พร้อมกัน
+
+3. Analysis (The GIL):
+Multithreading ไม่สามารถทำให้รันเร็วขึ้นได้เนื่องจากติดข้อจำกัด Global Interpreter Lock (GIL) ของ Python ที่ยอมให้รันได้ทีละเธรดเท่านั้น ในขณะที่ Multiprocessing เป็นการสร้างโปรเซสใหม่ที่แยก Memory และ GIL ของตัวเอง ทำให้ระบบปฏิบัติการสามารถทำงานแบบขนาน (Parallel) บน CPU หลายคอร์ได้จริง จึงเร็วกว่าในงานประเภท CPU-bound
