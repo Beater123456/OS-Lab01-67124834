@@ -1,0 +1,15 @@
+======================================================
+COE67-222 Operating Systems - Lab 03 Report
+Name: Attaporn Haijaroensuk
+Student ID: [ใส่รหัสนักศึกษาของคุณ]
+======================================================
+1. The Race Condition (Phase 2):
+สาเหตุที่ค่าลดลงคือก่อนที่ตัวแปรจะถูกบันทึกค่าใหม่ OS Scheduler ได้สลับไปให้อีกเธรดทำงาน ทำให้ทั้งสองเธรดดึงค่าเก่าไปบวก 1 พร้อมกัน เมื่อบันทึกกลับลงไป ค่าจึงเพิ่มขึ้นแค่ 1 แทนที่จะเป็น 2 ทำให้ข้อมูลสูญหาย[span_3](start_span)[span_3](end_span)
+
+2. Mutex vs. Semaphore (Phase 3):
+- mutex: ทำหน้าที่ล็อก (Lock) เพื่อป้องกัน Critical Section (เช่น in_index, out_index) ให้มีเพียงเธรดเดียวที่สามารถเข้าถึงและแก้ไขอาเรย์ buffer ได้ในแต่ละช่วงเวลา[span_4](start_span)[span_4](end_span)
+- empty และ full semaphores: ทำหน้าที่เป็นตัวนับ (Counter) เพื่อเช็คว่ามีช่องว่างเหลือให้ Producer ใส่ข้อมูลหรือไม่ (empty) และมีข้อมูลพร้อมให้ Consumer เอาไปใช้หรือไม่ (full)[span_5](start_span)[span_5](end_span)
+- เหตุผลที่ใช้ Mutex อย่างเดียวไม่ได้: เพราะ Mutex ไม่สามารถนับจำนวนช่องว่างหรือของที่มีใน Buffer ได้ ทำให้ไม่สามารถหยุดการทำงานเมื่อ Buffer เต็มหรือว่างเปล่าได้[span_6](start_span)[span_6](end_span)
+
+3. Deadlock Awareness:
+หากสลับบรรทัดกันและ Buffer เต็ม Producer จะทำการล็อก Mutex ไว้ก่อน จากนั้นจะไปติดสถานะ Wait ที่ empty.acquire() เพื่อรอช่องว่าง ในขณะเดียวกัน Consumer ที่ต้องการอ่านข้อมูลเพื่อทำให้เกิดช่องว่าง ก็ไม่สามารถเข้าไปอ่านได้เพราะ Producer ถือ Mutex ล็อกไว้อยู่ ทำให้ทั้งสองฝ่ายต่างรอคอยกันไปตลอดกาล เกิดสภาวะ Deadlock[span_7](start_span)[span_7](end_span)
