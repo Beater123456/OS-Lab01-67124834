@@ -1,0 +1,218 @@
+======================================================
+COE67-222 Operating Systems - Lab 10 Report (Final)
+
+Name: Attaporn Haijaroensuk
+Student ID: 67124834
+======================================================
+
+Laboratory 10: Mini-Project - AI Cluster OS Integration
+
+
+ผลการทดลอง
+
+Lab นี้เป็นการจำลอง AI Cluster Operating System ที่รวมแนวคิด
+จากหลาย Lab เข้าด้วยกัน เช่น Process Queue, Memory Management,
+CPU/GPU Scheduling, File System Security และ Deadlock Avoidance
+
+ระบบที่ใช้ในการทดลองมีทรัพยากรดังนี้
+
+Total RAM = 64 GB
+Number of GPUs = 4
+
+Workload ที่ใช้มี 4 งาน ได้แก่
+
+Workload A: Workload_A_LLaMA
+- ใช้ RAM 40 GB
+- ใช้ GPU 0, 1 และ 2
+- เป็นงาน Distributed Training
+
+Workload B: Workload_B_Preproc
+- ใช้ RAM 16 GB
+- ไม่ใช้ GPU
+- เป็นงาน Data Preprocessing
+
+Workload C: Workload_C_Infer
+- ใช้ RAM 2 GB
+- ใช้ GPU 3
+- เป็นงาน Inference
+
+Workload D: Workload_D_Hacker
+- พยายามใช้ไฟล์ secret_keys.txt
+- แต่ไฟล์ดังกล่าวไม่มีอยู่ในระบบ
+- ระบบจึงปฏิเสธการทำงาน
+
+จากการทดลองพบว่าระบบสามารถให้ Workload A, B และ C
+ทำงานพร้อมกันได้ โดยจัดสรร RAM และ GPU ให้แต่ละงานตามที่ต้องการ
+และ Workload D ถูกปฏิเสธจากการตรวจสอบ File System
+
+
+1. The Role of the Operating System
+
+
+1.1 File System & Permissions (Lab 9)
+
+ในโปรแกรม ultimate_cluster_os.py มีการตรวจสอบว่า Dataset
+ที่แต่ละ Job ต้องการใช้งานมีอยู่จริงหรือไม่ โดยใช้คำสั่ง
+
+os.path.exists(dataset_path)
+
+ถ้าไฟล์ไม่มีอยู่ โปรแกรมจะแสดงข้อความ FAILED
+และยุติการทำงานของ Job นั้นทันที
+
+ตัวอย่างคือ Workload_D_Hacker ซึ่งพยายามเรียกใช้ไฟล์
+
+secret_keys.txt
+
+แต่ไฟล์นี้ไม่มีอยู่จริงในระบบ จึงทำให้ Workload D
+ไม่สามารถทำงานต่อได้
+
+ส่วนนี้จำลองหน้าที่ของ File System ที่ตรวจสอบว่า Process
+สามารถเข้าถึง Resource ที่ต้องการได้หรือไม่ ก่อนที่จะให้ Process
+ดำเนินการต่อ
+
+
+1.2 Memory Management (Labs 5/6)
+
+ในโปรแกรมมีการตรวจสอบ RAM ก่อนที่จะอนุญาตให้ Job ทำงาน
+
+ระบบใช้ตัวแปร available_ram_gb เพื่อตรวจสอบว่า RAM
+ที่เหลืออยู่เพียงพอกับที่ Job ต้องการหรือไม่
+
+โปรแกรมใช้ while loop ลักษณะดังนี้
+
+while True:
+    ตรวจสอบ Available RAM
+    ถ้า RAM เพียงพอ
+        จัดสรร RAM ให้ Job
+        แล้วออกจาก loop
+    ถ้า RAM ไม่เพียงพอ
+        รอแล้วตรวจสอบใหม่อีกครั้ง
+
+วิธีนี้ช่วยป้องกันไม่ให้ระบบจัดสรร RAM เกินกว่าที่มีจริง
+
+เช่น ถ้ามี RAM ไม่พอ ระบบจะไม่รีบเริ่ม Job เพิ่ม
+แต่จะให้ Job รอจนกว่างานอื่นจะเสร็จและคืน RAM กลับมา
+
+วิธีนี้ช่วยลดโอกาสที่ระบบจะใช้หน่วยความจำเกินขนาด
+จนต้อง Swap ข้อมูลไปยัง Disk บ่อย ๆ และเกิด Thrashing
+
+
+1.3 Concurrency & Deadlocks (Labs 3/4)
+
+ในส่วนการจัดสรร GPU โปรแกรมใช้
+
+sorted_gpus = sorted(req_gpus)
+
+ก่อนที่จะ Lock GPU ที่แต่ละ Job ต้องการ
+
+การเรียงลำดับ GPU ก่อนทำการ Lock ทำให้ทุก Job
+พยายามขอ Resource ตามลำดับเดียวกัน
+
+ตัวอย่างเช่น Workload A ขอ GPU
+
+[2, 1, 0]
+
+แต่ก่อน Lock โปรแกรมจะเรียงเป็น
+
+[0, 1, 2]
+
+การบังคับให้ Process ขอ Resource ตามลำดับเดียวกัน
+ช่วยลดโอกาสเกิด Circular Wait ซึ่งเป็นหนึ่งในเงื่อนไข
+ที่ทำให้เกิด Deadlock
+
+ดังนั้นการใช้ Resource Hierarchy โดยจัดลำดับ GPU
+ก่อนการ Acquire Lock จึงเป็นวิธีที่ช่วยหลีกเลี่ยง Deadlock
+
+
+2. Hardware Utilization
+
+จากการทดลอง ระบบสามารถให้ Workload A, Workload B
+และ Workload C ทำงานพร้อมกันได้ เพราะแต่ละ Workload
+ไม่ได้ใช้ทรัพยากรเหมือนกันทั้งหมด
+
+Workload A เป็น Distributed Training
+ใช้ RAM 40 GB และ GPU 0, 1 และ 2
+
+หลังจาก Workload A ได้ RAM 40 GB แล้ว
+ระบบยังเหลือ RAM อีก 24 GB
+
+จากนั้น Workload B ใช้ RAM 16 GB และไม่ใช้ GPU เลย
+จึงสามารถทำงานด้วย CPU พร้อมกับ Workload A ได้
+
+หลังจากนั้น Workload C ใช้ RAM เพียง 2 GB และต้องการ GPU 3
+
+เนื่องจาก GPU 0, 1 และ 2 ถูก Workload A ใช้งานอยู่
+แต่ GPU 3 ยังว่าง Workload C จึงสามารถใช้ GPU 3
+และทำงานพร้อมกับ Workload A และ B ได้
+
+ดังนั้นทั้ง 3 งานจึงไม่จำเป็นต้องรอกันทั้งหมด เพราะ OS
+สามารถจัดสรร Resource ที่แตกต่างกันให้แต่ละงานได้
+
+Workload A ใช้ GPU 0, 1, 2
+Workload B ใช้ CPU และไม่ใช้ GPU
+Workload C ใช้ GPU 3
+
+รวม RAM ที่ทั้งสามงานใช้พร้อมกันคือ
+
+40 + 16 + 2 = 58 GB
+
+ซึ่งยังไม่เกิน RAM ทั้งหมด 64 GB
+
+จึงทำให้ระบบสามารถรันทั้งสาม Workload พร้อมกันได้
+โดยไม่ใช้ RAM เกินขนาด และไม่เกิดการแย่ง GPU ตัวเดียวกัน
+
+แนวคิดนี้แสดงให้เห็นว่า Operating System สามารถเพิ่ม
+Hardware Utilization ได้โดยจัดสรรทรัพยากรที่ยังว่าง
+ให้กับงานอื่นแทนที่จะปล่อยให้ทรัพยากรว่างอยู่
+
+
+3. Course Reflection (AI Engineering Context)
+
+จาก Lab นี้ ผมเข้าใจว่าการเป็น MLOps Engineer
+ไม่ได้ต้องรู้เพียงแค่การเขียน Python หรือ PyTorch เท่านั้น
+แต่ต้องเข้าใจด้วยว่า Operating System จัดการทรัพยากร
+เบื้องหลังอย่างไร
+
+ความรู้เรื่อง Process Queue ช่วยให้เข้าใจว่าระบบเลือก
+และจัดลำดับงานหลายงานอย่างไร
+
+ความรู้เรื่อง RAM และ Virtual Memory ช่วยให้สามารถ
+วางแผนการใช้หน่วยความจำของ AI Model และ Dataset
+ได้ดีขึ้น และช่วยหลีกเลี่ยงปัญหา Out-of-Memory
+หรือ Thrashing
+
+ความรู้เรื่อง Deadlock ช่วยให้เข้าใจวิธีจัดการ Resource
+เช่น GPU หลายตัว โดยไม่ทำให้หลาย Process รอกันเป็นวงจร
+
+ส่วนความรู้เรื่อง File System และ Permissions
+ช่วยให้สามารถป้องกัน Dataset หรือ Model Weight
+จากการถูกแก้ไขหรือเข้าถึงโดยไม่เหมาะสม
+
+ดังนั้นการเข้าใจ Operating Systems ทำให้ผมสามารถ
+มองระบบ AI ได้มากกว่าระดับของโค้ด เพราะสามารถเข้าใจ
+การใช้ CPU, RAM, GPU, File System และ Resource Scheduling
+ของระบบทั้งหมดได้
+
+ความรู้นี้มีประโยชน์ต่อการทำงานด้าน MLOps
+เพราะระบบ AI จริงต้องจัดการหลาย Workload พร้อมกัน
+และต้องใช้ทรัพยากรของเครื่องให้มีประสิทธิภาพโดยไม่ทำให้
+ระบบล่มหรือเกิดปัญหาจากการแย่ง Resource
+
+
+สรุปผลการทดลอง
+
+Lab 10 เป็นการรวมแนวคิดหลักของ Operating Systems
+มาใช้กับสถานการณ์ AI Cluster
+
+จากการทดลอง ระบบสามารถจัดการ Workload ที่มีลักษณะต่างกัน
+ได้พร้อมกัน โดย Workload A ใช้ RAM 40 GB และ GPU 0, 1, 2
+Workload B ใช้ RAM 16 GB และ CPU
+และ Workload C ใช้ RAM 2 GB และ GPU 3
+
+ระบบตรวจสอบ RAM ก่อนจัดสรร Resource เพื่อป้องกัน Thrashing
+จัดลำดับ GPU ก่อน Lock เพื่อลดโอกาสเกิด Deadlock
+และตรวจสอบ Dataset ก่อนเริ่ม Job เพื่อควบคุมการเข้าถึง File System
+
+ผลจาก Lab นี้ทำให้เห็นว่า Operating System มีบทบาทสำคัญ
+ในการควบคุมและจัดสรรทรัพยากรสำหรับงาน AI หลายประเภท
+ให้สามารถทำงานพร้อมกันได้อย่างมีประสิทธิภาพ

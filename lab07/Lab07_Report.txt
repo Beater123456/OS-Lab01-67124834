@@ -1,0 +1,128 @@
+======================================================
+COE67-222 Operating Systems - Lab 07 Report
+
+Name: Attaporn Haijaroensuk
+Student ID: 67124834
+======================================================
+
+Laboratory 7: CPU Scheduling Algorithms and Fairness
+
+
+ผลการทดลอง
+
+จากการทดลอง cpu_scheduler.py ได้ผลดังนี้
+
+FCFS
+- Average Waiting Time = 7.33
+- Average Turnaround Time = 12.33
+
+Round Robin (Time Quantum = 3)
+- Average Waiting Time = 4.33
+- Average Turnaround Time = 9.33
+
+จากผลการทดลองพบว่า Round Robin ทำให้เวลารอเฉลี่ยและ
+Turnaround Time เฉลี่ยน้อยกว่า FCFS ในชุด Process ที่ทดลอง
+
+Process ที่ใช้ในการทดลองคือ
+P1 = 10 CPU units
+P2 = 2 CPU units
+P3 = 3 CPU units
+
+
+1. The Convoy Effect (Phase 2)
+
+จากความเข้าใจของผม Convoy Effect คือปัญหาที่ Process ขนาดเล็ก
+ต้องรอ Process ขนาดใหญ่ที่อยู่ข้างหน้าทำงานจนเสร็จก่อน
+แม้ว่างานของ Process ขนาดเล็กจะใช้เวลาเพียงเล็กน้อยก็ตาม
+
+จากผลการทดลอง FCFS ของผม P1 ใช้ CPU เป็นเวลา 10 units
+และเป็น Process แรกใน Queue ดังนั้น P1 จึงได้ทำงานตั้งแต่ Time 0
+จนถึง Time 10 โดยที่ P2 และ P3 ยังไม่ได้ใช้ CPU
+
+ผลคือ P2 ต้องรอ 10 units ก่อนเริ่มทำงาน และ P3 ต้องรอถึง
+12 units ก่อนเริ่มทำงาน
+
+จึงเห็นได้ชัดว่า P1 ซึ่งเป็นงานขนาดใหญ่ทำให้ Process ขนาดเล็ก
+ที่ตามมาอย่าง P2 และ P3 ต้องรอนานขึ้น ซึ่งก็คือ Convoy Effect
+
+ในทางกลับกัน เมื่อใช้ Round Robin ที่มี Time Quantum = 3
+P1 จะไม่ได้ใช้ CPU ต่อเนื่องจนเสร็จ แต่จะใช้ได้ครั้งละไม่เกิน
+3 units แล้วต้องให้ Process อื่นได้ใช้ CPU ต่อ ทำให้ P2 และ P3
+สามารถเริ่มทำงานได้เร็วขึ้น
+
+ผลที่ได้คือ Average Waiting Time ลดจาก 7.33 ใน FCFS
+เหลือ 4.33 ใน Round Robin
+
+
+2. Choosing the Time Quantum
+
+Time Quantum คือจำนวนเวลาที่แต่ละ Process สามารถใช้ CPU
+ได้ต่อหนึ่งรอบใน Round Robin
+
+ถ้ากำหนด Time Quantum ใหญ่มาก เช่น Quantum = 100
+และ Process ทุกตัวใช้ CPU น้อยกว่า 100 units Process แรกจะสามารถ
+ทำงานจนเสร็จก่อนที่จะส่ง CPU ให้ Process ถัดไป
+
+ในกรณีนี้ Round Robin จะเริ่มมีพฤติกรรมคล้ายกับ FCFS
+เพราะแทบไม่มีการสลับ Process ระหว่างการทำงาน
+
+แต่ถ้ากำหนด Time Quantum เล็กมาก เช่น Quantum = 0.0001
+CPU จะต้องสลับจาก Process หนึ่งไปยังอีก Process หนึ่งบ่อยมาก
+
+ทุกครั้งที่มีการสลับ Process ระบบต้องทำ Context Switching
+ซึ่งมีค่าใช้จ่ายในการบันทึกสถานะของ Process เดิมและโหลดสถานะ
+ของ Process ใหม่
+
+ถ้าเกิด Context Switching บ่อยเกินไป CPU จะเสียเวลาไปกับ
+การสลับ Process มากกว่าการประมวลผลงานจริง ทำให้ประสิทธิภาพ
+ของระบบลดลง
+
+ดังนั้น Time Quantum ไม่ควรใหญ่หรือเล็กเกินไป
+ควรเลือกให้เหมาะสมเพื่อให้ระบบมีความยุติธรรมและไม่เสียเวลา
+กับ Context Switching มากเกินไป
+
+
+3. AI Context
+
+จากการทดลอง ai_inference_scheduler.py ผมได้จำลองผู้ใช้ 2 คน
+
+User_A_Essay ต้องการ 10 tokens
+User_B_Math ต้องการ 2 tokens
+
+เมื่อใช้ FCFS ระบบจะให้ User A ทำงานให้เสร็จก่อนทั้งหมด
+จากนั้น User B จึงจะเริ่มทำงานได้ ดังนั้นคำถามสั้น ๆ ของ User B
+ต้องรอคำถามยาวของ User A ทั้งที่ User B ต้องการเพียง 2 tokens
+
+แต่เมื่อใช้ Round Robin ระบบจะสลับการสร้าง token ระหว่างผู้ใช้
+โดยให้แต่ละ Request ได้ทำงานทีละส่วน
+
+จากผลที่ผมทดลอง User_B_Math ซึ่งต้องการเพียง 2 tokens
+สามารถทำงานเสร็จก่อน User_A_Essay ที่ต้องการ 10 tokens ได้
+
+วิธีนี้ช่วยป้องกันไม่ให้งานยาวครอบครองระบบจนงานสั้นต้องรอนาน
+และทำให้ผู้ใช้ที่ส่งคำถามสั้น ๆ ได้รับคำตอบเร็วขึ้น
+
+สำหรับระบบ AI แบบ Interactive สิ่งนี้ช่วยลดเวลาที่ผู้ใช้ต้องรอ
+ก่อนที่จะเริ่มได้รับคำตอบ หรือ Time To First Token (TTFT)
+ทำให้ผู้ใช้รู้สึกว่าระบบตอบสนองเร็วขึ้น แม้ว่างานขนาดใหญ่ของ
+ผู้ใช้อื่นจะยังทำงานอยู่ก็ตาม
+
+
+สรุปผลการทดลอง
+
+จาก Lab นี้ ผมได้เห็นความแตกต่างระหว่าง FCFS และ Round Robin
+จากการทดลองจริง
+
+FCFS เป็นวิธีที่เข้าใจง่าย แต่ Process ขนาดเล็กอาจต้องรอ Process
+ขนาดใหญ่ที่อยู่ก่อนหน้า ทำให้เกิด Convoy Effect
+
+ส่วน Round Robin แบ่งเวลา CPU ให้แต่ละ Process ตาม Time Quantum
+ทำให้แต่ละ Process มีโอกาสใช้ CPU และมีความยุติธรรมมากขึ้น
+
+จากผลการทดลองของผม Average Waiting Time ลดจาก 7.33
+ใน FCFS เหลือ 4.33 ใน Round Robin และ Average Turnaround Time
+ลดจาก 12.33 เหลือ 9.33
+
+นอกจากนี้เมื่อประยุกต์กับ AI Inference Server วิธี Round Robin
+ยังช่วยให้ Request ขนาดเล็กสามารถเสร็จได้เร็ว โดยไม่ต้องรอ
+Request ขนาดใหญ่ทำงานจนเสร็จก่อนทั้งหมด

@@ -1,0 +1,172 @@
+======================================================
+COE67-222 Operating Systems - Lab 09 Report
+
+Name: Attaporn Haijaroensuk
+Student ID: 67124834
+======================================================
+
+Laboratory 9: File Systems, Metadata, and OS Security
+
+
+ผลการทดลอง
+
+จากการทดลอง inode_inspector.py ผมใช้ os.stat()
+เพื่อตรวจสอบ Metadata ของไฟล์ dataset_sample.csv
+
+ผลที่ได้จากเครื่องของผมคือ
+
+Inode Number = 22726287
+File Size = 43 bytes
+OS Permissions = -rw-r--r--
+
+เมื่อทดลองรันอีกครั้ง Inode Number ยังคงเป็น 22726287
+
+จากนั้นทดลอง os_security.py โดยกำหนด Permission ของไฟล์
+secret_config.json เป็น 0o400 หรือ Read-Only สำหรับ Owner
+
+เมื่อโปรแกรมพยายามเขียนข้อมูลลงไฟล์ ระบบปฏิบัติการปฏิเสธ
+การเขียนและเกิด PermissionError
+
+ผลที่ได้คือ
+
+[OS KERNEL BLOCKED] PermissionError
+The Operating System successfully protected the file!
+
+สุดท้ายทดลอง ai_weight_protection.py โดยกำหนดไฟล์
+production_resnet50.pth เป็น Permission 0o444
+เพื่อให้สามารถอ่านได้ แต่ไม่สามารถเขียนทับได้
+
+เมื่อโปรแกรมจำลองพยายามเปิดไฟล์ใน Write mode
+Operating System ปฏิเสธการเขียน
+
+ผลที่ได้คือ
+
+[DISASTER AVERTED] OS Kernel denied write access.
+The multi-million dollar model is safe.
+
+
+1. Inodes and Metadata
+
+จากความเข้าใจของผม Inode คือข้อมูลที่ระบบปฏิบัติการใช้เก็บ
+Metadata ของไฟล์ เช่น เจ้าของไฟล์ ขนาดไฟล์ ตำแหน่งของข้อมูล
+และ Permission ของไฟล์
+
+Inode Number ไม่ใช่ชื่อไฟล์ แต่เป็นหมายเลขที่ระบบไฟล์ใช้
+อ้างอิงตัวไฟล์จริง
+
+ดังนั้นถ้าใช้คำสั่ง mv เพื่อเปลี่ยนชื่อไฟล์ภายในระบบไฟล์เดิม
+Inode Number จะไม่เปลี่ยน เพราะสิ่งที่เปลี่ยนคือชื่อที่ใช้เรียกไฟล์
+แต่ตัวข้อมูลและ Inode ที่อ้างอิงไฟล์นั้นยังเป็นตัวเดิม
+
+จากการทดลองของผม เมื่อรัน inode_inspector.py ซ้ำ
+Inode Number ของ dataset_sample.csv ยังคงเป็น 22726287
+
+จึงทำให้ผมเข้าใจว่า Operating System แยกชื่อไฟล์ออกจาก
+Metadata และข้อมูลของไฟล์ที่ถูกอ้างอิงด้วย Inode
+
+
+2. POSIX Permissions
+
+Linux Permission แบ่งสิทธิ์ออกเป็น 3 กลุ่ม คือ
+
+Owner
+Group
+Others
+
+โดยสิทธิ์แต่ละแบบมีค่าดังนี้
+
+Read    = 4
+Write   = 2
+Execute = 1
+
+โจทย์กำหนดให้
+
+Owner มี Read, Write และ Execute
+= 4 + 2 + 1
+= 7
+
+Group มี Read และ Execute
+= 4 + 1
+= 5
+
+Others ไม่มีสิทธิ์
+= 0
+
+ดังนั้น Permission แบบ 3 หลักคือ
+
+750
+
+ถ้าใช้ใน Python จะเขียนได้ว่า
+
+os.chmod(filename, 0o750)
+
+Permission นี้มีความหมายว่า
+
+Owner  = rwx
+Group  = r-x
+Others = ---
+
+หรือ
+
+rwxr-x---
+
+
+3. The AI Context
+
+จากการทดลอง ผมพบว่าการใช้ Permission ของระบบปฏิบัติการ
+สามารถช่วยป้องกันไฟล์ได้โดยตรงในระดับ OS
+
+ในการทดลอง os_security.py ผมกำหนด Permission
+ของ secret_config.json เป็น 0o400
+
+เมื่อโปรแกรมพยายามเขียนข้อมูลลงไฟล์ Linux Kernel
+ปฏิเสธการเขียนและเกิด PermissionError
+
+ในส่วนของ AI Model ก็ใช้แนวคิดเดียวกัน โดยกำหนดไฟล์
+production_resnet50.pth เป็น 0o444
+
+Permission 0o444 ทำให้ไฟล์สามารถอ่านได้
+แต่ไม่มี Write Permission
+
+ดังนั้นถึงแม้โปรแกรม Training จะมีข้อผิดพลาดและพยายามเปิด
+Production Model ด้วย Write mode ระบบปฏิบัติการก็สามารถ
+ปฏิเสธการเขียนได้
+
+การใช้ Python try-except เพียงอย่างเดียวเป็นการจัดการ Error
+ภายในโปรแกรม แต่ไม่ได้เป็นตัวกำหนดสิทธิ์ในการเข้าถึงไฟล์
+
+ในทางกลับกัน OS Permission ถูกบังคับใช้โดยระบบปฏิบัติการ
+จึงสามารถควบคุมได้โดยตรงว่า Process ใดมีสิทธิ์อ่าน
+เขียน หรือรันไฟล์
+
+จากผลการทดลองของผม เมื่อโปรแกรมพยายามเขียนทับ Model Weight
+ระบบแสดงข้อความ
+
+[DISASTER AVERTED] OS Kernel denied write access.
+
+จึงเห็นได้ว่าการใช้ OS Permission สามารถช่วยป้องกัน
+Production Model Weight จากการถูกเขียนทับโดยโปรแกรม
+ที่ไม่มีสิทธิ์หรือโปรแกรมที่ทำงานผิดพลาดได้
+
+
+สรุปผลการทดลอง
+
+จาก Lab นี้ ผมได้เรียนรู้เกี่ยวกับ File System, Inode,
+Metadata และ Permission ของระบบปฏิบัติการ
+
+ผมได้ทดลองใช้ os.stat() เพื่อตรวจสอบข้อมูลของไฟล์
+เช่น Inode Number, File Size และ Permission
+โดย Inode Number ที่ได้จากการทดลองคือ 22726287
+
+นอกจากนี้ยังได้ทดลองใช้ os.chmod() เพื่อควบคุมสิทธิ์ของไฟล์
+
+การกำหนด Permission เป็น 0o400 ทำให้ Owner
+สามารถอ่านไฟล์ได้ แต่ไม่สามารถเขียนไฟล์ได้
+
+ส่วนในกรณีของ AI Model Weight การกำหนด Permission
+เป็น 0o444 ทำให้ไฟล์สามารถอ่านได้แต่ไม่สามารถเขียนทับได้
+
+ผลการทดลองทำให้ผมเข้าใจว่า OS-level File Permission
+เป็นส่วนสำคัญในการควบคุมความปลอดภัยของไฟล์
+โดยเฉพาะในระบบ AI ที่มี Model Weight ที่สำคัญและไม่ควร
+ถูกแก้ไขหรือเขียนทับโดยไม่ได้รับอนุญาต
